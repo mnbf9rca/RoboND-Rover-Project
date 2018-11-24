@@ -22,9 +22,8 @@
 
 [//]: # (Image References)
 
-[image1]: ./rock_threshed.jpg
-[image2]: ./calibration_images/example_grid1.jpg
-[image3]: ./calibration_images/example_rock1.jpg 
+[image1]: ./code/rock_threshed.png
+
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/916/view) Points
 ### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
@@ -83,9 +82,4 @@ In future, I would consider
 - biasing the `nav_angle` away from areas which have already been scanned, or even some sort of planning where it can identify isolated but unscanned areas.
 - work out how to collect rocks i.e. set a course for a rock and approach it, stop, and pick.
 
-
-
-
-![alt text][image3]
-
-
+Thanks!
