@@ -27,9 +27,9 @@ def color_thresh(img, rgb_thresh=(160, 160, 160)):
     color_not_select[below_thresh] = 1
     return color_select, color_not_select
 
+
+
 # Define a function to convert from image coords to rover coords
-
-
 def rover_coords(binary_img):
     # Identify nonzero pixels
     ypos, xpos = binary_img.nonzero()
