@@ -1,3 +1,6 @@
+import random
+import time
+
 import numpy as np
 
 
@@ -13,9 +16,49 @@ def decision_step(Rover):
     # Check if we have vision data to make decisions with
     if Rover.nav_angles is not None:
         # Check for Rover.mode status
+        stuck_precision = 10
+        if Rover.mode == 'unstick':
+            # stuck - try turning
+            Rover.brake = 0
+            Rover.steer = -15
+            Rover.throttle = -Rover.throttle_set
+
+            if time.time() - Rover.time_last_checked_pos > Rover.stuck_timeout:
+                # we;ve been at this for at least stuck_timeout seconds
+                # check if we're still stuck
+                x, y = Rover.pos
+                # round
+                x = int(x * stuck_precision)
+                y = int(y * stuck_precision)
+                if Rover.last_pos != (x, y):
+                    # we seem to have moved
+                    # try going forward again
+                    Rover.mode = 'forward'
+                Rover.time_last_checked_pos = time.time()
+                Rover.last_pos = (x, y)
+
         if Rover.mode == 'forward': 
+            # check pos every 3 seconds
+            # if it's identical, and velocity is low, assume we're stuck
+            if time.time() - Rover.time_last_checked_pos > Rover.stuck_timeout:
+                x, y = Rover.pos
+                # round
+                x = int(x * stuck_precision)
+                y = int(y * stuck_precision)
+                if Rover.vel < 0.2:
+                    if Rover.last_pos == (x, y):
+                        # stuck!
+                        # Set mode to "unstick" and hit the brakes!
+                        Rover.throttle = 0
+                        # Set brake to stored brake value
+                        Rover.brake = Rover.brake_set
+                        Rover.steer = 0
+                        Rover.mode = 'unstick'
+
+                Rover.time_last_checked_pos = time.time()
+                Rover.last_pos = (x, y)
             # Check the extent of navigable terrain
-            if len(Rover.nav_angles) >= Rover.stop_forward:  
+            elif len(Rover.nav_angles) >= Rover.stop_forward:  
                 # If mode is forward, navigable terrain looks good 
                 # and velocity is below max, then throttle 
                 if Rover.vel < Rover.max_vel:
@@ -72,4 +115,3 @@ def decision_step(Rover):
         Rover.send_pickup = True
     
     return Rover
-
