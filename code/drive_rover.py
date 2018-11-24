@@ -17,6 +17,8 @@ import pickle
 import matplotlib.image as mpimg
 import time
 
+from collections import deque
+
 # Import functions for perception and decision making
 from perception import perception_step
 from decision import decision_step
@@ -59,8 +61,8 @@ class RoverState():
         # of navigable terrain pixels.  This is a very crude form of knowing
         # when you can keep going and when you should stop.  Feel free to
         # get creative in adding new fields or modifying these!
-        self.stop_forward = 50 # Threshold to initiate stopping
-        self.go_forward = 300 # Threshold to go forward again
+        self.stop_forward = 70 # Threshold to initiate stopping
+        self.go_forward = 500 # Threshold to go forward again
         self.max_vel = 2 # Maximum velocity (meters/second)
         # Image output from perception step
         # Update this image to display your intermediate analysis steps
@@ -79,8 +81,9 @@ class RoverState():
         self.send_pickup = False # Set to True to trigger rock pickup
         self.time_last_checked_pos = 0 # track how much time we've been at less than 0.2m/s
         self.last_pos = None # what was the last known position (to tell if we're stuck)
-        self.time_started_to_unstick = 0 # when did we start to unstick? so we can ensure we try for > some time
         self.stuck_timeout = 3 # how many seconds do we need to be static for before we assume we're stuck?
+        self.last_nav_angles = deque([]) # List of angles to take average from
+        self.use_last_n_angles_for_steering = 50 # number of angles to average
 
 # Initialize our rover 
 Rover = RoverState()

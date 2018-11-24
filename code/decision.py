@@ -2,7 +2,16 @@ import random
 import time
 
 import numpy as np
+from collections import deque
 
+def append_angle(Rover, new_angle):
+    # randomly set some to -0 to induce a propensity to straight lines over cornering
+    if random.random() < 0.2:
+        new_angle = 0
+    Rover.last_nav_angles.append(new_angle)
+    while len(Rover.last_nav_angles) > Rover.use_last_n_angles_for_steering:
+        Rover.last_nav_angles.popleft()
+    return Rover.last_nav_angles
 
 # This is where you can build a decision tree for determining throttle, brake and steer 
 # commands based on the output of the perception_step() function
@@ -18,14 +27,12 @@ def decision_step(Rover):
         # Check for Rover.mode status
         stuck_precision = 10
         if Rover.mode == 'unstick':
-            # stuck - try turning
-            Rover.brake = 0
-            Rover.steer = -15
-            Rover.throttle = -Rover.throttle_set
 
-            if time.time() - Rover.time_last_checked_pos > Rover.stuck_timeout:
-                # we;ve been at this for at least stuck_timeout seconds
+            turn_direction = 1
+            if time.time() - Rover.time_last_checked_pos > 1:
+                # we;ve been at this for at least 1 seconds (or just started)
                 # check if we're still stuck
+
                 x, y = Rover.pos
                 # round
                 x = int(x * stuck_precision)
@@ -34,8 +41,15 @@ def decision_step(Rover):
                     # we seem to have moved
                     # try going forward again
                     Rover.mode = 'forward'
+                else:
+                    # randomise the turn direction every stuck_timeout seconds
+                    turn_direction = [-1,1][random.randrange(2)]
+                    Rover.steer =  turn_direction * 15
                 Rover.time_last_checked_pos = time.time()
                 Rover.last_pos = (x, y)
+            # stuck - try turning
+            Rover.brake = 0
+            Rover.throttle = -10 # try backing up hard
 
         if Rover.mode == 'forward': 
             # check pos every 3 seconds
@@ -67,8 +81,12 @@ def decision_step(Rover):
                 else: # Else coast
                     Rover.throttle = 0
                 Rover.brake = 0
-                # Set steering to average angle clipped to the range +/- 15
-                Rover.steer = np.clip(np.mean(Rover.nav_angles * 180/np.pi), -15, 15)
+                # Set steering to average angle clipped to the range +/- 15 - adjusted to 10 to smoothen driving
+                # but don't always turn because sometimes we get stuck in a loop
+                last_angles = np.mean(append_angle(Rover, np.mean(Rover.nav_angles * 180/np.pi)))
+
+                Rover.steer = np.clip(np.mean(last_angles), -10, 10)
+
             # If there's a lack of navigable terrain pixels then go to 'stop' mode
             elif len(Rover.nav_angles) < Rover.stop_forward:
                     # Set mode to "stop" and hit the brakes!
