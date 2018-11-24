@@ -22,7 +22,7 @@
 
 [//]: # (Image References)
 
-[image1]: ./misc/rover_image.jpg
+[image1]: ./rock_threshed.jpg
 [image2]: ./calibration_images/example_grid1.jpg
 [image3]: ./calibration_images/example_rock1.jpg 
 
@@ -38,21 +38,51 @@ You're reading it!
 
 ### Notebook Analysis
 #### 1. Run the functions provided in the notebook on test images (first with the test data provided, next on data you have recorded). Add/modify functions to allow for color selection of obstacles and rock samples.
-See the Jupyter notebook [./code/Rover_Project_Test_Notebook.ipynb]
-#### 1. Populate the `process_image()` function with the appropriate analysis steps to map pixels identifying navigable terrain, obstacles and rock samples into a worldmap.  Run `process_image()` on your test data using the `moviepy` functions provided to create video output of your result. 
-And another! 
+See the [Jupyter notebook](./code/Rover_Project_Test_Notebook.ipynb) for the full code.
 
-![alt text][image2]
+i completed `color_thresh()` as requested. 
+
+`color_thresh()` returns two arrays, the first is teh mask where the threshold is exceeded, the second where it's not and where there is a non-zero pixel value. While testing, i noticed that i had to exclude areas with no value (as i can't realistically confirm whether they do or don't have obstacles). 
+
+![5 images showing processing stages of a rock discovery via warping, and thresholding][image1]
+
+#### 1. Populate the `process_image()` function with the appropriate analysis steps to map pixels identifying navigable terrain, obstacles and rock samples into a worldmap.  Run `process_image()` on your test data using the `moviepy` functions provided to create video output of your result. 
+steps were included. Video is here: [Training run video](output/test_mapping.mp4)
+
 ### Autonomous Navigation and Mapping
 
 #### 1. Fill in the `perception_step()` (at the bottom of the `perception.py` script) and `decision_step()` (in `decision.py`) functions in the autonomous mapping scripts and an explanation is provided in the writeup of how and why these functions were modified as they were.
+`perception.py` was pretty much a cut and paste job from my previous code. I populated `color_thresh()`, and added `perception_step()` to process the image data. I added a condition to the step where Rover.worldmap is updated to include only those points captured in a frame with roll and pitch within a ±0.4 degrees of horizontal to improve fidelity. This included adding `absolute_degrees()` to calculate the absolute number of degress from 0 (as negative are reported as a number 180 < n < 360). I also swapped some of the colour coding as i found it hard to see rocks.
 
+`decision.py` was a bit more challenging. I modified the `decision_step()` to include a check for positional change, as i found that the rover often got stuck. In this case, we rapidly reverse for 1 second and spin in a random direction. This seems to work :)
+
+At first, I found that the rover swung from side to side, so i moderated nav_angle by using a rolling average of the last n (50 seems to work) results. Although this reduced the jerkiness of some movements, it didn't solve another problem i'd observed - the rover tended to go up and down the same paths, or get stuck going around in a circle on an open patch of land. So I now set the angle to 0 (straight) on approx 20% of readings. As I'm using an average, this has the effect of slightly decreasing the magnitude of the turn radius, or the propensity to turn i.e. the rover is more likely to head in a straighter line.
+
+i had to add some properties to the `Rover` class for these changes to work.
 
 #### 2. Launching in autonomous mode your rover can navigate and map autonomously.  Explain your results and how you might improve them in your writeup.  
 
 **Note: running the simulator with different choices of resolution and graphics quality may produce different results, particularly on different machines!  Make a note of your simulator settings (resolution and graphics quality set on launch) and frames per second (FPS output to terminal by `drive_rover.py`) in your writeup when you submit the project so your reviewer can reproduce your results.**
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+when launching i selected 1024x768 resolution with "fantastic" graphics quality. This gave an FPS typically around 40, although on some runs it was as high as 60.
+
+I made a [video of a training run, which is on youtube](https://youtu.be/_twsFdoUu3c). In this, you can see that the rover does a reasonable job of scanning the environment and locating the rocks - achieving around 60% coverage at over 80% fidelity in around 3 minutes.
+
+I iteratively tested several different parameters
+- `max_vel` - reduced slightly to reduce roll and yaw and increase precision
+- `stop_forward` - increased slightly to reduce the chance of hitting a wall
+- `go_forward` - 500 seemed to be a good number. Too low and it kept stopping, too high and sometimes it couldnt find a clear path.
+
+what could cause it to fail?
+- at the moment, the biggest cause is looping i.e. re-covering ground that's already scanned, and not discovering other paths.
+- the rover also gets stuck on rocks - being able to identify obstacles independent of the edges of the road would help.
+- rough terrain increases pitch and roll and reduces fidelity.
+- in one test run, the rover got stuck behind a big rock. Even manually, i couldn't get it out :)
+
+In future, I would consider
+- biasing the `nav_angle` away from areas which have already been scanned, or even some sort of planning where it can identify isolated but unscanned areas.
+- work out how to collect rocks i.e. set a course for a rock and approach it, stop, and pick.
+
 
 
 
