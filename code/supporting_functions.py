@@ -50,7 +50,7 @@ def update_rover(Rover, data):
       # Update number of rocks collected
       Rover.samples_collected = Rover.samples_to_find - np.int(data["sample_count"])
 
-      print('mode', Rover.mode,'average angle', np.mean(Rover.last_nav_angles),'last_pos',  Rover.last_pos, 'time_last_checked_pos =', Rover.time_last_checked_pos,  'speed =',Rover.vel, 'position =', Rover.pos, 'throttle =', 
+      print('mode', Rover.mode,'rock in sight', Rover.rock_in_sight, 'rock history', Rover.rock_sensor_history , 'rock dists', np.mean(Rover.rock_dists),  'average angle', np.mean(Rover.last_nav_angles),'last_pos',  Rover.last_pos, 'time_last_checked_pos =', Rover.time_last_checked_pos,  'speed =',Rover.vel, 'position =', Rover.pos, 'throttle =', 
       Rover.throttle, 'steer_angle =', Rover.steer, 'near_sample:', Rover.near_sample, 
       'picking_up:', data["picking_up"], 'sending pickup:', Rover.send_pickup, 
       'total time:', Rover.total_time, 'samples remaining:', data["sample_count"], 

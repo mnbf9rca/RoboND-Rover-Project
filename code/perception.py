@@ -4,6 +4,12 @@ import cv2
 # Identify pixels above the threshold
 # Threshold of RGB > 160 does a nice job of identifying ground pixels only
 
+def append_rock_history(Rover, rock_true_false):
+    '''append the latest angle to the list, and drop the oldest from the list to max length'''
+    Rover.rock_sensor_history.append(rock_true_false)
+    while len(Rover.rock_sensor_history) > Rover.rock_history_length:
+        Rover.rock_sensor_history.popleft()
+    return Rover.rock_sensor_history
 
 def color_thresh(img, rgb_thresh=(160, 160, 160)):
     # Create an array of zeros same xy size as img, but single channel
@@ -150,6 +156,10 @@ def perception_step(Rover):
     Rover.vision_image[:, :, 1] = obs_threshed_orig  # show obstacles in green
     Rover.vision_image[:, :, 0] = rock_threshed_orig  # highlight rocks in red
 
+    # check if any pixel is reported as indicating a rock and store this in a bool on Rover
+    rock_history = append_rock_history(Rover, np.any(rock_threshed))
+    Rover.rock_in_sight = np.all(rock_history)
+
     # 5) Convert map image pixel values to rover-centric coords
     nav_xpix, nav_ypix = rover_coords(nav_threshed)
     nav_dist, nav_angles = to_polar_coords(nav_xpix, nav_ypix)
@@ -206,5 +216,9 @@ def perception_step(Rover):
     rover_centric_pixel_distances, rover_centric_angles = to_polar_coords(nav_xpix, nav_ypix)
     Rover.nav_dists = rover_centric_pixel_distances
     Rover.nav_angles = rover_centric_angles
+
+    rover_centric_pixel_distances, rover_centric_angles = to_polar_coords(rock_xpix, rock_ypix)
+    Rover.rock_dists = rover_centric_pixel_distances
+    Rover.rock_angles = rover_centric_angles    
 
     return Rover
